@@ -1,5 +1,6 @@
 const express = require('express')
 const app = express()
+const morgan = require('morgan');
 
 app.use(express.json())
 
@@ -30,6 +31,17 @@ const PORT = 3001
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`)
 })
+
+app.use(morgan('dev'));
+
+morgan.token('post-data', (req) => {
+  if (req.method === 'POST') {
+    return JSON.stringify(req.body);
+  }
+  return '-';
+});
+
+app.use(morgan(':method :url :status :res[content-length] - :response-time ms :post-data'));
  
 app.get('/', (request, response) => {
   response.send(`<h1>Backend Phonebook</h1>` )
@@ -95,3 +107,4 @@ app.post('/api/persons', (request, response) => {
 
   response.json(person)
 })
+
