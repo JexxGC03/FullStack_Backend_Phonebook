@@ -1,32 +1,10 @@
+require('dotenv').config()
 const express = require('express')
 const app = express()
-const morgan = require('morgan');
 const cors = require('cors')
+const Person = require('./models/person')
 
 app.use(cors())
-
-let persons = [
-    { 
-      "id": 1,
-      "name": "Arto Hellas", 
-      "number": "040-123456"
-    },
-    { 
-      "id": 2,
-      "name": "Ada Lovelace", 
-      "number": "39-44-5323523"
-    },
-    { 
-      "id": 3,
-      "name": "Dan Abramov", 
-      "number": "12-43-234345"
-    },
-    { 
-      "id": 4,
-      "name": "Mary Poppendieck", 
-      "number": "39-23-6423122"
-    }
-]
 
 const requestLogger = (request, response, next) => {
   console.log('Method:', request.method)
@@ -37,36 +15,27 @@ const requestLogger = (request, response, next) => {
 } 
 
 app.use(express.json())
-//app.use(morgan('dev'));
 app.use(express.static('dist'))
 app.use(requestLogger)
-
-/*
-morgan.token('post-data', (req) => {
-  if (req.method === 'POST') {
-    return JSON.stringify(req.body);
-  }
-  return '-';
-});
-
-app.use(morgan(':method :url :status :res[content-length] - :response-time ms :post-data'));
-*/
 
 app.get('/', (request, response) => {
   response.send(`<h1>Backend Phonebook</h1>` )
 })
 
 app.get('/info', (request, response) => {
-  const total_persons = persons.length
+  const total_persons = Person.length
   console.log(total_persons)
   const date = new Date().toString()
   response.send(
     `<p>Phonebook has info for ${total_persons} people</p>
     <p>${date} </p>`)
   })
-  
-  app.get('/api/persons', (request, response) => {
-    response.json(persons)
+
+
+app.get('/api/persons', (request, response) => {
+    Person.find({}).then(persons => {
+      response.json(persons)
+    })
 })
 
 app.get('/api/persons/:id', (request, response) => {
