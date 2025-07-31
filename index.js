@@ -39,55 +39,47 @@ app.get('/api/persons', (request, response) => {
 })
 
 app.get('/api/persons/:id', (request, response) => {
-  const id = Number(request.params.id)
-  const person = persons.find(person => person.id === id)
-  
-  if (person) {
+  Person.findById(request.params.id).then(person => {
     response.json(person)
-  } else {
-    response.status(404).end()
-  }
+  })
 })
 
-
-const generateId = () => {
-  const maxId = persons.length > 0
-    ? Math.max(...persons.map(n => n.id))
-    : 0
-  return maxId + 1
-}
-
 app.post('/api/persons', (request, response) => {
-  const body = request.body
-  const existingPerson = persons.find(person => person.name === body.name);
-  
+  const body = request.body;
+
   if (!body.name || !body.number) {
     return response.status(400).json({ 
       error: 'content missing' 
-    })
+    });
   }
-  
-  if(existingPerson){
-    return response.status(400).json({
-      error: `person ${body.name} already exists`
-    })
-  }
-  
-  const person = {
-    name: body.name,
-    number: body.number,
-    id: generateId(),
-  }
-  
-  persons = persons.concat(person)
-  
-  response.json(person)
+
+  Person.find({ name: body.name }).then(existingPerson => {
+    if (existingPerson.length > 0) {
+      return response.status(400).json({
+        error: `person ${body.name} already exists`
+      });
+    }
+
+    const person = new Person({
+      name: body.name,
+      number: body.number,
+    });
+
+    person.save().then(savedPerson => {
+      response.json(savedPerson);
+    });
+  });
 })
 
 app.delete('/api/persons/:id', (request, response) => {
-  const id = Number(request.params.id)
-  persons = persons.filter(person => person.id !== id)
-  response.status(204).end()
+  Person.findByIdAndDelete(request.params.id)
+    .then(() => {
+      response.status(204).end()
+    })
+    .catch(error => {
+      console.log('error deleting person:', error.message)
+      response.status(500).send({ error: 'deletion failed' })
+    })
 })
 
 const PORT = process.env.PORT || 3001
