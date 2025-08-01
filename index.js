@@ -12,7 +12,17 @@ const requestLogger = (request, response, next) => {
   console.log('Body:  ', request.body)
   console.log('---')
   next()
-} 
+}
+
+const errorHandler = (error, request, response, next) => {
+  console.error(error.message)
+
+  if (error.name === 'CastError') {
+    return response.status(400).send({ error: 'malformatted id' })
+  } 
+
+  next(error)
+}
 
 app.use(express.json())
 app.use(express.static('dist'))
@@ -71,6 +81,25 @@ app.post('/api/persons', (request, response) => {
   });
 })
 
+app.put('/api/persons/:id', (request, response) => {
+  const { number } = request.body;
+  Person.findByIdAndUpdate(
+    request.params.id,
+    { number },
+    { new: true, runValidators: true, context: 'query' }
+  )
+    .then(updatedPerson => {
+      if (updatedPerson) {
+        response.json(updatedPerson);
+      } else {
+        response.status(404).json({ error: 'person not found' });
+      }
+    })
+    .catch(error => {
+      response.status(400).json({ error: error.message });
+    });
+});
+
 app.delete('/api/persons/:id', (request, response) => {
   Person.findByIdAndDelete(request.params.id)
     .then(() => {
@@ -81,6 +110,13 @@ app.delete('/api/persons/:id', (request, response) => {
       response.status(500).send({ error: 'deletion failed' })
     })
 })
+
+const unknownEndpoint = (request, response) => {
+  response.status(404).send({ error: 'unknown endpoint' })
+}
+
+app.use(unknownEndpoint)
+app.use(errorHandler)
 
 const PORT = process.env.PORT || 3001
 app.listen(PORT, () => {
